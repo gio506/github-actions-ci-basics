@@ -1,21 +1,39 @@
 # github-actions-ci-basics
 
-A tiny Python project that demonstrates a clean **GitHub Actions CI pipeline** with clear stages and local parity.
+A tiny Python example project that demonstrates a practical **GitHub Actions CI pipeline** with clear quality gates and local reproducibility.
 
-## Pipeline stages
+## CI pipeline overview
 
-This repository uses `.github/workflows/ci.yml` with 4 sequential jobs:
+The workflow lives in `.github/workflows/ci.yml` and runs on pushes to `main` and on pull requests.
 
-1. **Format check** (`black --check .`)
-2. **Lint** (`ruff check .`)
-3. **Unit tests** (`pytest -q`)
-4. **Build/package** (`python -m build`) and upload `dist/` as artifact
+### Stage 1: Quality checks (format + lint)
+- **Format check**: `black --check .`
+- **Lint check**: `ruff check .`
+
+Both checks are grouped in one job so code quality feedback appears together and early.
+
+### Stage 2: Unit tests
+- **Test runner**: `pytest -q`
+- Runs only after quality checks pass.
+
+### Stage 3: Build/package
+- **Build command**: `python -m build`
+- Uploads generated `dist/` files as a GitHub Actions artifact.
+
+## Best-practice choices used
+
+- **Least-privilege permissions** in workflow (`contents: read`).
+- **Concurrency control** to cancel stale runs on the same branch/PR.
+- **Pip cache** via `actions/setup-python` to speed up repeated runs.
+- **Sequential job dependencies** (`needs`) for explicit CI gates.
+- **Pinned tool versions** in `requirements-dev.txt` for reproducible checks.
 
 ## Run locally
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
 
 black --check .
@@ -28,17 +46,18 @@ python -m build
 
 ```text
 .
-├── .github/workflows/ci.yml      # GitHub Actions workflow with 4 CI stages
-├── app.py                        # Tiny app with simple functions under test
-├── test_app.py                   # Unit tests for app behavior
-├── pyproject.toml                # Python project metadata + tool configuration
-├── requirements-dev.txt          # Dev dependencies for local checks and CI
-├── CHEATSHEET.md                 # Quick command reference for contributors
-└── README.md                     # Project overview and CI explanation
+├── .github/workflows/ci.yml      # CI workflow: quality checks, tests, build, artifact upload
+├── app.py                        # Tiny application module used by tests
+├── test_app.py                   # Unit tests validating app behavior
+├── pyproject.toml                # Packaging metadata + tool config for black/ruff/pytest
+├── requirements-dev.txt          # Pinned dev dependencies for CI and local checks
+├── CHEATSHEET.md                 # Command reference (Python, CI, Git, troubleshooting)
+├── .gitignore                    # Ignore local env/build/cache artifacts
+└── README.md                     # CI documentation, stages, and local run guide
 ```
 
-## Why this example is useful
+## Why this repository exists
 
-- Keeps application code intentionally tiny so CI concepts are the focus.
-- Mirrors CI steps locally to reduce "works on my machine" issues.
-- Shows artifact packaging as a final stage in a multi-step pipeline.
+- Keep code intentionally small so CI design is easy to understand.
+- Provide a clean baseline that teams can copy and extend.
+- Demonstrate the same checks locally and in CI for predictable results.

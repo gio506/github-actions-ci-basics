@@ -1,50 +1,71 @@
 # CI & Local Dev Cheatsheet
 
-## Environment setup
+## 1) Environment setup
 
 ```bash
-python --version                 # confirm Python is available
-python -m venv .venv             # create isolated environment
-source .venv/bin/activate        # activate venv (Linux/macOS)
-pip install -r requirements-dev.txt  # install formatter, linter, test, build tools
+python --version                        # Verify local Python version
+python -m venv .venv                    # Create isolated virtual environment
+source .venv/bin/activate               # Activate environment (Linux/macOS)
+python -m pip install --upgrade pip     # Update pip to latest
+pip install -r requirements-dev.txt     # Install formatter/linter/test/build tools
 ```
 
-## Code quality commands
+## 2) Code quality
 
 ```bash
-black .                          # auto-format code
-black --check .                  # fail if formatting is needed
-ruff check .                     # run static lint checks
-ruff check . --fix               # auto-fix some lint findings
+black .                                 # Auto-format code
+black --check .                         # CI-style format validation
+ruff check .                            # Lint code for errors/style issues
+ruff check . --fix                      # Auto-fix safe lint issues
 ```
 
-## Testing
+## 3) Testing
 
 ```bash
-pytest -q                        # run all tests (quiet mode)
-pytest -k even -q                # run tests matching expression
-pytest --maxfail=1 -q            # stop quickly on first failure
+pytest -q                               # Run all tests in quiet mode
+pytest -k even -q                       # Run tests filtered by keyword
+pytest --maxfail=1 -q                   # Stop after first failing test
+pytest -q test_app.py::test_add         # Run one specific test
 ```
 
-## Packaging / artifacts
+## 4) Packaging
 
 ```bash
-python -m build                  # create sdist and wheel in dist/
-ls dist                          # inspect generated package files
+python -m build                         # Build source + wheel into dist/
+ls -lh dist                             # List generated package artifacts
 ```
 
-## GitHub Actions tips
+## 5) Useful Git commands (expanded)
 
 ```bash
-git status                       # see local changes
-git add .                        # stage files
-git commit -m "feat: add CI pipeline demo"   # create commit
-git push origin main             # push changes to trigger CI
+git status                              # Show working tree changes
+git switch -c feat/ci-improvement       # Create and switch to new branch
+git fetch origin                        # Fetch remote refs
+
+git add .                               # Stage all modified/new files
+git add -p                              # Stage changes interactively
+
+git commit -m "feat(ci): improve quality gates"   # Create commit
+
+git log --oneline --decorate -n 10      # Compact recent commit history
+git show --stat HEAD                    # Show latest commit summary
+git diff                                # Diff unstaged changes
+git diff --staged                       # Diff staged changes
+
+git restore --staged <file>             # Unstage a file
+git restore <file>                      # Discard unstaged changes to a file
+
+git rebase origin/main                  # Rebase branch onto latest main
+git cherry-pick <commit_sha>            # Apply one commit onto current branch
+
+git push origin HEAD                    # Push current branch
+git push --force-with-lease             # Safer force push after rebase
 ```
 
-## Troubleshooting quick fixes
+## 6) CI troubleshooting
 
 ```bash
-pip install --upgrade pip        # update pip when installs fail
-rm -rf .pytest_cache build dist *.egg-info  # clean common generated artifacts
+rm -rf .pytest_cache build dist *.egg-info __pycache__  # Clean generated artifacts
+python -m pip cache purge                               # Clear pip cache
+python -m compileall app.py test_app.py                 # Quick Python syntax check
 ```
