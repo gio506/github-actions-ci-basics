@@ -10,6 +10,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Codex" }]
 
+[tool.setuptools]
+py-modules = ["app"]
+
 [tool.black]
 line-length = 88
 target-version = ["py311"]
