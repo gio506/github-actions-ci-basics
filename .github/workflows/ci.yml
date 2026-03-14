@@ -14,9 +14,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
-    name: Stage 1 - Format check
+  structure-check:
+    name: Stage 1 - Structure check
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify required files
+        shell: bash
+        run: |
+          required_files=(
+            "README.md"
+            "CHEATSHEET.md"
+            "FILES_EXPLAINED.md"
+            "app.py"
+            "test_app.py"
+            "pyproject.toml"
+            "requirements-dev.txt"
+          )
+          for file in "${required_files[@]}"; do
+            test -f "$file" || {
+              echo "Missing required file: $file"
+              exit 1
+            }
+          done
+
+  format:
+    name: Stage 2 - Format check
+    runs-on: ubuntu-latest
+    needs: structure-check
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,7 +61,7 @@ jobs:
         run: black --check .
 
   lint:
-    name: Stage 2 - Lint
+    name: Stage 3 - Lint
     runs-on: ubuntu-latest
     needs: format
     steps:
@@ -56,7 +82,7 @@ jobs:
         run: ruff check .
 
   tests:
-    name: Stage 3 - Unit tests
+    name: Stage 4 - Unit tests
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -84,7 +110,7 @@ jobs:
           if-no-files-found: error
 
   build_package:
-    name: Stage 4 - Build package
+    name: Stage 5 - Build package
     runs-on: ubuntu-latest
     needs: tests
     steps:
@@ -108,3 +134,29 @@ jobs:
           name: python-dist
           path: dist/
           if-no-files-found: error
+
+  final-status-gate:
+    name: Stage 6 - Final status gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - structure-check
+      - format
+      - lint
+      - tests
+      - build_package
+    steps:
+      - name: Aggregate results
+        shell: bash
+        env:
+          STRUCTURE: ${{ needs.structure-check.result }}
+          FORMAT: ${{ needs.format.result }}
+          LINT: ${{ needs.lint.result }}
+          TESTS: ${{ needs.tests.result }}
+          BUILD: ${{ needs.build_package.result }}
+        run: |
+          for result in "$STRUCTURE" "$FORMAT" "$LINT" "$TESTS" "$BUILD"; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              exit 1
+            fi
+          done
